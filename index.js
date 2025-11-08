@@ -15,17 +15,15 @@ const store_passwd = process.env.STORE_PASS;
 const is_live = false; // keep false for sandbox
 const PORT = process.env.PORT || 5000;
 
-if (!store_id || !store_passwd) {
-  console.warn("⚠️ STORE_ID or STORE_PASS not set in environment variables");
-}
-
-// ✅ Base URL of your Render deployment (replace after deploying)
-const BASE_URL = process.env.BASE_URL || "https://giftwrap-sslcommerz.onrender.com";
+// ✅ Base URL of your Render deployment
+const BASE_URL =
+  process.env.BASE_URL || "https://giftwrap-ssl-backend.onrender.com";
 
 // ----- PAYMENT INITIALIZATION -----
 app.post("/order", async (req, res) => {
   try {
-    const { total, receiver, address, phone, userEmail, userId, orderItems } = req.body;
+    const { total, receiver, address, phone, userEmail, userId, orderItems } =
+      req.body;
     if (!total) return res.status(400).send({ error: "total is required" });
 
     const data = {
@@ -72,13 +70,15 @@ app.post("/order", async (req, res) => {
   }
 });
 
-// ----- SIMPLE SUCCESS/FAIL/CANCEL PAGES -----
-function showMessage(res, title, message, color = "#222") {
+// ----- HELPER: HTML WITH APP REDIRECT -----
+function redirectToApp(res, status) {
+  // Updated deep link to match your HomeScreen
+  const deepLink = `giftwrap://homepage?payment=${status}`;
   const html = `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
-    <title>${title}</title>
+    <title>Payment ${status}</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -97,91 +97,60 @@ function showMessage(res, title, message, color = "#222") {
         background: #fff;
         box-shadow: 0 4px 8px rgba(0,0,0,0.05);
       }
-      h2 {
-        color: ${color};
-        margin-bottom: 10px;
-      }
-      p {
-        color: #555;
-      }
+      h2 { margin-bottom: 10px; color: #222; }
+      p { color: #555; }
     </style>
   </head>
   <body>
     <div class="box">
-      <h2>${title}</h2>
-      <p>${message}</p>
+      <h2>Payment ${status.toUpperCase()}</h2>
+      <p>Redirecting back to GiftWrap app...</p>
     </div>
+    <script>
+      setTimeout(() => {
+        window.location = "${deepLink}";
+      }, 1000);
+    </script>
   </body>
 </html>`;
   res.setHeader("Content-Type", "text/html");
   res.status(200).send(html);
 }
 
+// ----- SUCCESS / FAIL / CANCEL -----
 app.get("/success", (req, res) => {
   console.log("✅ Payment Success (GET):", req.query);
-  showMessage(
-    res,
-    "Payment Successful 🎉",
-    "Thank you! Your payment has been completed successfully.",
-    "#2e7d32"
-  );
+  redirectToApp(res, "success");
 });
 
 app.post("/success", (req, res) => {
   console.log("✅ Payment Success (POST):", req.body);
-  showMessage(
-    res,
-    "Payment Successful 🎉",
-    "Thank you! Your payment has been completed successfully.",
-    "#2e7d32"
-  );
+  redirectToApp(res, "success");
 });
 
 app.get("/fail", (req, res) => {
   console.log("❌ Payment Failed:", req.query);
-  showMessage(
-    res,
-    "Payment Failed ❌",
-    "Sorry, your payment could not be processed.",
-    "#c62828"
-  );
+  redirectToApp(res, "fail");
 });
 
 app.post("/fail", (req, res) => {
   console.log("❌ Payment Failed (POST):", req.body);
-  showMessage(
-    res,
-    "Payment Failed ❌",
-    "Sorry, your payment could not be processed.",
-    "#c62828"
-  );
+  redirectToApp(res, "fail");
 });
 
 app.get("/cancel", (req, res) => {
   console.log("⚠️ Payment Cancelled:", req.query);
-  showMessage(
-    res,
-    "Payment Cancelled ⚠️",
-    "You have cancelled the payment.",
-    "#f57c00"
-  );
+  redirectToApp(res, "cancel");
 });
 
 app.post("/cancel", (req, res) => {
   console.log("⚠️ Payment Cancelled (POST):", req.body);
-  showMessage(
-    res,
-    "Payment Cancelled ⚠️",
-    "You have cancelled the payment.",
-    "#f57c00"
-  );
+  redirectToApp(res, "cancel");
 });
 
 // ----- BASE ENDPOINT -----
 app.get("/", (req, res) => {
-  res.send("🚀 SSLCommerz backend deployed successfully on Render!");
+  res.send("🚀 SSLCommerz backend with deep link redirect is working!");
 });
 
-app.listen(PORT, () =>
-  console.log(`✅ Server running on port ${PORT}`)
-);
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
