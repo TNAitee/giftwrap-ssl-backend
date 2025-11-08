@@ -12,18 +12,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Environment variables from Render dashboard
 const store_id = process.env.STORE_ID;
 const store_passwd = process.env.STORE_PASS;
-const is_live = false; // keep false for sandbox
+const is_live = false; // false for sandbox, true for live
 const PORT = process.env.PORT || 5000;
 
-// ✅ Base URL of your Render deployment
-const BASE_URL =
-  process.env.BASE_URL || "https://giftwrap-ssl-backend.onrender.com";
+// Base URL of your Render deployment
+const BASE_URL = process.env.BASE_URL || "https://giftwrap-ssl-backend.onrender.com";
 
 // ----- PAYMENT INITIALIZATION -----
 app.post("/order", async (req, res) => {
   try {
-    const { total, receiver, address, phone, userEmail, userId, orderItems } =
-      req.body;
+    const { total, receiver, address, phone, userEmail, userId, orderItems } = req.body;
     if (!total) return res.status(400).send({ error: "total is required" });
 
     const data = {
@@ -72,7 +70,7 @@ app.post("/order", async (req, res) => {
 
 // ----- HELPER: HTML WITH APP REDIRECT -----
 function redirectToApp(res, status) {
-  // Updated deep link to match your HomeScreen
+  // deep link to your homepage with payment status
   const deepLink = `giftwrap://homepage?payment=${status}`;
   const html = `<!doctype html>
 <html>
@@ -117,32 +115,29 @@ function redirectToApp(res, status) {
   res.status(200).send(html);
 }
 
-// ----- SUCCESS / FAIL / CANCEL -----
+// ----- SUCCESS / FAIL / CANCEL ROUTES -----
 app.get("/success", (req, res) => {
   console.log("✅ Payment Success (GET):", req.query);
   redirectToApp(res, "success");
 });
-
 app.post("/success", (req, res) => {
   console.log("✅ Payment Success (POST):", req.body);
   redirectToApp(res, "success");
 });
 
 app.get("/fail", (req, res) => {
-  console.log("❌ Payment Failed:", req.query);
+  console.log("❌ Payment Failed (GET):", req.query);
   redirectToApp(res, "fail");
 });
-
 app.post("/fail", (req, res) => {
   console.log("❌ Payment Failed (POST):", req.body);
   redirectToApp(res, "fail");
 });
 
 app.get("/cancel", (req, res) => {
-  console.log("⚠️ Payment Cancelled:", req.query);
+  console.log("⚠️ Payment Cancelled (GET):", req.query);
   redirectToApp(res, "cancel");
 });
-
 app.post("/cancel", (req, res) => {
   console.log("⚠️ Payment Cancelled (POST):", req.body);
   redirectToApp(res, "cancel");
@@ -153,4 +148,5 @@ app.get("/", (req, res) => {
   res.send("🚀 SSLCommerz backend with deep link redirect is working!");
 });
 
+// ----- START SERVER -----
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
